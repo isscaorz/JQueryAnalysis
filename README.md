@@ -1,7 +1,5 @@
-# JQueryAnalysis
-Read JQuery in order to study JavaScript
 # jQuery- v1.11.3 源码解读
-
-`jQuery` 源码中，中文注释是我的解读 ，才疏学浅，注释若有不正之处，万望告知。
-
-[详细全文中文注释戳这里（未完待续）](myRead/jquery_v1.11.3_myRead.js)
+[v1.11.3官方未压缩代码戳这里](official/jquery_v1.11.3_official.js)
+[v1.11.3中文注释（未完待续）戳这里](myRead/jquery_v1.11.3_myRead.js)
+[v3.2.1官方未压缩代码戳这里](official/jquery_v3.2.1_official.js)
+[v3.2.1中文注释（还未开始）戳这里）](myRead/jquery_v3.2.1_myRead.js)
