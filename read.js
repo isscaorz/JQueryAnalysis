@@ -21,7 +21,6 @@
 * 总体构造
 */
 (function (global, factory) {   //整个jquery是一个立即调用的匿名函数
-
     if (typeof module === "object" && typeof module.exports === "object") { //判断是否是CommonJS规范
         //jquery采用一个立即调用函数，判断是否是CommonJS规范（typeof module === "object" && typeof module.exports === "object"），不是则调用库函数，是则再判断
         //有没有document(走到这步是判断过没有window，开启没有window模式)，有则调用库函数，
