@@ -18,22 +18,17 @@
 
 /*
  * line:15~38,10352
- * 总体构造
+ * 总体构造:
  * 
+ * jquery采用一个立即调用函数
+ * 判断是否是CommonJS规范（typeof module === "object" && typeof module.exports === "object"）
+ * 如果不是CommonJS规范是则调用库函数factory
+ * 如果是CommonJS规范，就判断有没有document(走到这步是判断过没有window，开启没有window模式)
+ * 如果有document则调用库函数factory
+ * 如果没有document则返回一个等待传入window的匿名函数
  * 
- * 
- * 
- * 
- */
-/*
- * jquery采用一个立即调用函数，判断是否是CommonJS规范（typeof module === "object" && typeof module.exports === "object"），不是则调用库函数，是则再判断
- * 有没有document(走到这步是判断过没有window，开启没有window模式)，
- * 有则调用库函数，
- * 无则返回一个等待传入window的匿名函数。
- * module 和 module.exports主要是为了让jQuery能够以模块的形式注入到没有window.document变量的诸如Node.js的运行环境中，
- * 当遇到这种情况，就不会在window中设置jQuery$变量。
- * 要使用jQuery时，则是使用所返回的jQuery对象，
- * 如在Node.js中： var jQuery = require("jquery")(window);
+ * module 和 module.exports主要是为了让jQuery能够以模块的形式注入到没有window.document变量的运行环境中
+ * 例如在Node.js中，就不会在window中设置jQuery$变量，而是使用所返回的jQuery对象： var jQuery = require("jquery")(window);
  */
 
 (function(global, factory) { //整个jquery是一个立即调用的匿名函数
