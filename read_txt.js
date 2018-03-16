@@ -71,7 +71,7 @@
 	 * jQuery.fn.selector: 定义一个空的选择器selector
 	 * jQuery.fn.length: jQuery对象的长度，默认为 0。也即是jQuery对象里边选取的DOM节点数目。
 	 * jQuery.fn.toArray: 将jQuery对象转换成数组类型，相当于Array.prototype.slice.call(this)
-	 * 
+	 * jQuery.fn.get: 将jQuery对象转换成数组类型，相当于Array.prototype.slice.call(this)
 	 * 
 	 */
 	jQuery.fn = jQuery.prototype = {

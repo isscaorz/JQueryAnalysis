@@ -55,17 +55,10 @@
 		toArray: function() {//将jQuery对象转换成数组类型
 			return slice.call(this); //[].slice.call(this), 相当于Array.prototype.slice.call(this)
 		},
-
-		// Get the Nth element in the matched element set OR
-		// Get the whole matched element set as a clean array
-		get: function(num) {
-			return num != null ?
-
-				// Return just the one element from the set
-				(num < 0 ? this[num + this.length] : this[num]) :
-
-				// Return all the elements in a clean array
-				slice.call(this);
+		get: function(num) {//获取jQuery对象中索引为num的元素
+			return num != null ? //判断num是否不为null 
+				(num < 0 ? this[num + this.length] : this[num]) : //如果num不为null，从集合中返回一个元素，如果num为负数，从数组尾巴倒数索引，num不为负数则返回索引为num的元素
+				slice.call(this); //如果num为null，在一个干净的数组里返回所有元素，即将jQuery对象转换成数组类型
 		},
 
 		// Take an array of elements and push it onto the stack
