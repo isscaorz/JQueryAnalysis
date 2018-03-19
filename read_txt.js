@@ -71,9 +71,21 @@
 	 * jQuery.fn.selector: 定义一个空的选择器selector
 	 * jQuery.fn.length: jQuery对象的长度，默认为 0。也即是jQuery对象里边选取的DOM节点数目。
 	 * jQuery.fn.toArray: 将jQuery对象转换成数组类型，相当于Array.prototype.slice.call(this)
-	 * jQuery.fn.get: 将jQuery对象转换成数组类型，相当于Array.prototype.slice.call(this)
+	 * jQuery.fn.get: 获取jQuery对象中索引为num的元素
+	 * --如果num不为null，从集合中返回一个元素
+	 * ----如果num为负数，从数组尾巴倒数索引
+	 * ----如果num不为负数,则返回索引为num的元素
+	 * --如果num为null，在一个干净的数组里返回所有元素，即将jQuery对象转换成数组类型
+	 * jQuery.fn.pushStack: 将一个元素集合（一般为dom）推入堆栈（返回新的匹配元素集）
+	 * --this.constructor就是jQuery的构造函数jQuery.fn.init，所以this.constructor()返回一个jQuery对象。无参的this.constructor(),只是返回引用this
+	 * --jQuery.merge函数返回的对象是第二个元素附加到第一个上面， jQuery.merge把elems节点，合并到新的jQuery对象ret
+	 * --给ret添加属性prevObject，ret的prevObject属性指向上一个对象，所以可以通过prevObject属性找到栈的上一个对象，即通过prevObject取到上一个合集的引用
+	 * 
+	 * 
 	 * 
 	 */
+
+
 	jQuery.fn = jQuery.prototype = {
 		jquery: version,
 		constructor: jQuery,

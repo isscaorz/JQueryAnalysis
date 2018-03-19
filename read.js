@@ -60,53 +60,39 @@
 				(num < 0 ? this[num + this.length] : this[num]) : //如果num不为null，从集合中返回一个元素，如果num为负数，从数组尾巴倒数索引，num不为负数则返回索引为num的元素
 				slice.call(this); //如果num为null，在一个干净的数组里返回所有元素，即将jQuery对象转换成数组类型
 		},
-
-		// Take an array of elements and push it onto the stack
-		// (returning the new matched element set)
-		pushStack: function(elems) {
-
-			// Build a new jQuery matched element set
-			var ret = jQuery.merge(this.constructor(), elems);
-
-			// Add the old object onto the stack (as a reference)
-			ret.prevObject = this;
+		pushStack: function(elems) {//将一个元素集合（一般为dom）推入堆栈（并返回新的匹配元素集）
+			var ret = jQuery.merge(this.constructor(), elems); //构建一个新的jQuery对象(this.constructor就是jQuery的构造函数jQuery.fn.init，所以this.constructor()返回一个jQuery对象,无参的this.constructor(),只是返回引用this), jQuery.merge 把elems节点，合并到新的jQuery对象,由于jQuery.merge函数返回的对象是第二个元素附加到第一个上面，所以ret也是一个jQuery对象
+			ret.prevObject = this; //给返回的新jQuery对象ret添加属性prevObject，ret的prevObject属性指向上一个对象，所以可以通过prevObject属性找到栈的上一个对象，即通过prevObject取到上一个合集的引用
 			ret.context = this.context;
-
-			// Return the newly-formed element set
-			return ret;
+			return ret; //返回新形成的元素集(新jQuery对象)ret
 		},
 
 		// Execute a callback for every element in the matched set.
 		// (You can seed the arguments with an array of args, but this is
 		// only used internally.)
+		// 为匹配集合中的每个元素执行回调（可以使用一个args数组对参数进行种子处理，但仅在内部使用）。
 		each: function(callback, args) {
 			return jQuery.each(this, callback, args);
 		},
-
 		map: function(callback) {
 			return this.pushStack(jQuery.map(this, function(elem, i) {
 				return callback.call(elem, i, elem);
 			}));
 		},
-
 		slice: function() {
 			return this.pushStack(slice.apply(this, arguments));
 		},
-
 		first: function() {
 			return this.eq(0);
 		},
-
 		last: function() {
 			return this.eq(-1);
 		},
-
 		eq: function(i) {
 			var len = this.length,
 				j = +i + (i < 0 ? len : 0);
 			return this.pushStack(j >= 0 && j < len ? [this[j]] : []);
 		},
-
 		end: function() {
 			return this.prevObject || this.constructor(null);
 		},
