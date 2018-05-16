@@ -66,7 +66,7 @@
 			ret.context = this.context;
 			return ret; //返回新形成的元素集(新jQuery对象)ret
 		},
-		each: function (callback, args) {// 为匹配集合中的每个元素执行回调（可以使用一个args数组对参数进行种子处理，但仅在内部使用）。
+		each: function (callback, args) {// 为匹配集合中的每个元素执行回调（可以使用一个args数组对参数进行种子处理，但仅在内部使用）。 
 			return jQuery.each(this, callback, args);
 		},
 		map: function (callback) {
