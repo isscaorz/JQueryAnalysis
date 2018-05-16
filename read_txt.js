@@ -84,8 +84,6 @@
 	 * 
 	 * 
 	 */
-
-
 	jQuery.fn = jQuery.prototype = {
 		jquery: version,
 		constructor: jQuery,
