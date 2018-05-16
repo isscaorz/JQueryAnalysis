@@ -12,7 +12,6 @@
     //     console.log(el,i);
     // });
     // console.log(jQuery.fn);
-    $('ul.first').find('.foo').css('background-color', 'red')
-    .end().end().find('.bar').css('background-color', 'green');
-    console.log( $('ul.first').find('.foo').end().end().end());
+    
+    console.log(typeof 0)
 }());
