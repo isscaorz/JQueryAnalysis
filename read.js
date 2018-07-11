@@ -101,7 +101,7 @@
 			i = 1,
 			length = arguments.length,
 			deep = false;
-		if (typeof target === "boolean") {//处理深拷贝的情况，如果第一个参数为布尔值
+		if (typeof target === "boolean") {//处理深拷贝的情况，如果第一个参数为布尔值，表示是否要深度递归
 			deep = target;//记录第一个参数到deep
 			target = arguments[i] || {};//调整target的值
 			i++;//调整i的值，i值表示第一个src对象的索引
@@ -116,123 +116,97 @@
 		for (; i < length; i++) {
 			if ((options = arguments[i]) != null) { //只处理非 空/未定义 的值, 从i开始遍历获得传入的参数
 				for (name in options) { //扩展基本对象
-					src = target[name];
-					copy = options[name];
-					// Prevent never-ending loop
-					if (target === copy) {
+					src = target[name]; //src是源（即本身）的值
+					copy = options[name]; //copy是即将要复制过去的值
+					if (target === copy) { //防止有无限循环，例如 extend(true, target, {'target':target});
 						continue;
 					}
-					// Recurse if we're merging plain objects or arrays
-					if (deep && copy && (jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)))) {
-						if (copyIsArray) {
+					if (deep && copy && (jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)))) {//如果我们合并纯对象或数组，则递归。纯粹的对象指的是 通过 "{}" 或者 "new Object" 创建的
+						if (copyIsArray) { 
 							copyIsArray = false;
 							clone = src && jQuery.isArray(src) ? src : [];
 						} else {
 							clone = src && jQuery.isPlainObject(src) ? src : {};
 						}
-						// Never move original objects, clone them
-						target[name] = jQuery.extend(deep, clone, copy);
-						// Don't bring in undefined values
-					} else if (copy !== undefined) {
+						target[name] = jQuery.extend(deep, clone, copy); //不要移动原始对象，而是克隆它们
+					} else if (copy !== undefined) { //不要引入未定义的值。最终都会到这条分支
 						target[name] = copy;
 					}
 				}
 			}
 		}
-		return target; //返回修改后的对象
+		return target; //返回修改后的对象，如果 i < length ，是直接返回没经过处理的 target，也就是 arguments[0]，也就是如果不传需要覆盖的源，调用 $.extend 其实是增加 jQuery 的静态方法
 	};
 
-	jQuery.extend({
-		// Unique for each copy of jQuery on the page
-		expando: "jQuery" + (version + Math.random()).replace(/\D/g, ""),
-		// Assume jQuery is ready without the ready module
-		isReady: true,
-		error: function (msg) {
+	jQuery.extend({		
+		expando: "jQuery" + (version + Math.random()).replace(/\D/g, ""),// 产生jQuery随机数，来ba页面上的jQuery的每个副本都是唯一的
+		isReady: true, //DOM ready是否已经完成。假定jQuery在模块没就绪之前就已经就绪
+		error: function (msg) {//为JavaScript的 "error" 事件绑定一个处理函数
 			throw new Error(msg);
 		},
-		noop: function () { },
+		noop: function () { },//空函数。
 		// See test/unit/core.js for details concerning isFunction.
 		// Since version 1.3, DOM methods and functions like alert
 		// aren't supported. They return false on IE (#2968).
-		isFunction: function (obj) {
+		isFunction: function (obj) {//判断传入对象是否为 function。从1.3版本开始，dom方法或者类似alert的函数不再支持，在IE中返回false
 			return jQuery.type(obj) === "function";
 		},
-		isArray: Array.isArray || function (obj) {
+		isArray: Array.isArray || function (obj) {//判断传入对象是否为数组
 			return jQuery.type(obj) === "array";
 		},
-		isWindow: function (obj) {
-			/* jshint eqeqeq: false */
+		isWindow: function (obj) {//判断传入对象是否为 window 对象
 			return obj != null && obj == obj.window;
 		},
-		isNumeric: function (obj) {
-			// parseFloat NaNs numeric-cast false positives (null|true|false|"")
-			// ...but misinterprets leading-number strings, particularly hex literals ("0x...")
-			// subtraction forces infinities to NaN
-			// adding 1 corrects loss of precision from parseFloat (#15100)
-			return !jQuery.isArray(obj) && (obj - parseFloat(obj) + 1) >= 0;
+		isNumeric: function (obj) {// 确定它的参数是否是一个数字
+			return !jQuery.isArray(obj) && (obj - parseFloat(obj) + 1) >= 0;//加1是为了弥补精度损失，但是超大数如9999999999999999还是会有问题
 		},
-		isEmptyObject: function (obj) {
+		isEmptyObject: function (obj) { //检查对象是否为空（不包含任何属性）
 			var name;
 			for (name in obj) {
 				return false;
 			}
 			return true;
 		},
-		isPlainObject: function (obj) {
+		isPlainObject: function (obj) {// 测试对象是否是纯粹的对象,通过"{}"或者"new Object"创建的
 			var key;
-			// Must be an Object.
-			// Because of IE, we also have to check the presence of the constructor property.
-			// Make sure that DOM nodes and window objects don't pass through, as well
-			if (!obj || jQuery.type(obj) !== "object" || obj.nodeType || jQuery.isWindow(obj)) {
+			if (!obj || jQuery.type(obj) !== "object" || obj.nodeType || jQuery.isWindow(obj)) {//obj必须为一个Object，并且必须不是DOM节点或者window对象
 				return false;
 			}
-			try {
-				// Not own constructor property must be Object
+			try {//由于IE,我们必须检测构造函数属性的存在，没有自己的构造函数属性一定是对象
 				if (obj.constructor &&
 					!hasOwn.call(obj, "constructor") &&
 					!hasOwn.call(obj.constructor.prototype, "isPrototypeOf")) {
 					return false;
 				}
-			} catch (e) {
-				// IE8,9 Will throw exceptions on certain host objects #9897
+			} catch (e) {//IE8，9将在某些主机对象上抛出异常
 				return false;
 			}
-			// Support: IE<9
-			// Handle iteration over inherited properties before own properties.
-			if (support.ownLast) {
+			if (support.ownLast) {//支持<IE9,在自身属性之前处理继承属性的迭代。
 				for (key in obj) {
 					return hasOwn.call(obj, key);
 				}
 			}
-			// Own properties are enumerated firstly, so to speed up,
-			// if last one is own, then all properties are own.
-			for (key in obj) { }
+			for (key in obj) { }//首先列举了自己的属性，以便加快速度，如果最后一个是自己的，那么所有的属性都是自己的。
 			return key === undefined || hasOwn.call(obj, key);
 		},
-		type: function (obj) {
-			if (obj == null) {
+		type: function (obj) { // 确定JavaScript对象的类型, 关键之处在于class2type[core_toString.call(obj)], 可以使得typeof obj 为 "object" 类型的得到更进一步的精确判断
+			if (obj == null) { //如果传入null
 				return obj + "";
 			}
-			return typeof obj === "object" || typeof obj === "function" ?
+			return typeof obj === "object" || typeof obj === "function" ?  // 利用事先存好的hash表class2type作精准判断
 				class2type[toString.call(obj)] || "object" :
 				typeof obj;
 		},
-		// Evaluates a script in a global context
-		// Workarounds based on findings by Jim Driscoll
-		// http://weblogs.java.net/blog/driscoll/archive/2009/09/08/eval-javascript-global-context
-		globalEval: function (data) {
-			if (data && jQuery.trim(data)) {
-				// We use execScript on Internet Explorer
-				// We use an anonymous function so that context is window
-				// rather than jQuery in Firefox
-				(window.execScript || function (data) {
-					window["eval"].call(window, data);
+		globalEval: function (data) { //一个eval的变种（eval()：函数可计算某个字符串，并执行其中的的 JavaScript 代码），globalEval()函数用于全局性地执行一段JavaScript代码，该方法跟eval方法相比有一个作用域的范围差异即始终处于全局作用域下面
+			//在全局上下文中评估脚本,参见http://weblogs.java.net/blog/driscoll/archive/2009/09/08/eval-javascript-global-context.
+			if (data && jQuery.trim(data)) {// 如果data不为空
+				//在Internet Explorer上使用Excript脚本,	在Firefox中使用匿名函数使得上下文是窗口而不是jQuery
+				(window.execScript || function (data) {//如果window.execScript存在，则直接 window.execScript(data)，window.execScript 方法会根据提供的脚本语言执行一段脚本代码，现在是在IE跟旧版本的Chrome是支持此方法的，新版浏览器没有 window.execScript 这个API
+					window["eval"].call(window, data);//在chrome一些旧版本里eval.call(window, data)无效，所以这里不能直接：eval.call(window, data);
 				})(data);
 			}
 		},
-		// Convert dashed to camelCase; used by the css and data modules
-		// Microsoft forgot to hump their vendor prefix (#9572)
-		camelCase: function (string) {
+		camelCase: function (string) { //转换到驼峰拼写法。由CSS和数据模块使用。微软忘记驼峰他们的供应商前缀
 			return string.replace(rmsPrefix, "ms-").replace(rdashAlpha, fcamelCase);
 		},
 		nodeName: function (elem, name) {
