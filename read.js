@@ -40,7 +40,7 @@
 		jQuery = function (selector, context) { //实例化jQuery对象 ,selector是选择器，context是上下文			
 			return new jQuery.fn.init(selector, context); //jQuery对象实际上只是init构造函数增强,如果调用jQuery就需要初始化（如果不包括，则允许抛出错误）
 		},
-		rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, //确保去除BOM(字节顺序标记)和 &nbsp,支持Android<4.1, IE<9。
+		rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, //确保去除BOM(字节顺序标记)和 &nbsp,支持Android<4.1, IE<9。\uFEFF是utf8的字节序标记，\xA0是全角空格，详见字节顺序标记 https://zh.wikipedia.org/wiki/%E4%BD%8D%E5%85%83%E7%B5%84%E9%A0%86%E5%BA%8F%E8%A8%98%E8%99%9F
 		rmsPrefix = /^-ms-/, //匹配用于驼峰命名化的虚线，IE中的前缀 -ms 转成： Ms  
 		rdashAlpha = /-([\da-z])/gi, //匹配用于驼峰命名化的虚线，转大小写-left转成 Left
 		fcamelCase = function (all, letter) { //被jQuery.camelCase用作回调函数来replace()
@@ -138,7 +138,7 @@
 		return target; //返回修改后的对象，如果 i < length ，是直接返回没经过处理的 target，也就是 arguments[0]，也就是如果不传需要覆盖的源，调用 $.extend 其实是增加 jQuery 的静态方法
 	};
 
-	jQuery.extend({		
+	jQuery.extend({ //一些工具函数，jQuery.extend(object) 为扩展jQuery类本身，为类添加新的方法, jQuery.fn.extend(object)给jQuery对象添加方法
 		expando: "jQuery" + (version + Math.random()).replace(/\D/g, ""),// 产生jQuery随机数，来ba页面上的jQuery的每个副本都是唯一的
 		isReady: true, //DOM ready是否已经完成。假定jQuery在模块没就绪之前就已经就绪
 		error: function (msg) {//为JavaScript的 "error" 事件绑定一个处理函数
@@ -206,18 +206,17 @@
 				})(data);
 			}
 		},
-		camelCase: function (string) { //转换到驼峰拼写法。由CSS和数据模块使用。微软忘记驼峰他们的供应商前缀
+		camelCase: function (string) { //转换到驼峰拼写法，例如将font-size变为fontSize。由CSS和数据模块使用，例如element.currentStyle.getAttribute(camelCase(style)) 传入的参数必须是驼峰表示法。微软忘记驼峰他们的供应商前缀,在很多需要兼容IE的地方用得上
 			return string.replace(rmsPrefix, "ms-").replace(rdashAlpha, fcamelCase);
 		},
-		nodeName: function (elem, name) {
-			return elem.nodeName && elem.nodeName.toLowerCase() === name.toLowerCase();
+		nodeName: function (elem, name) {// 获取DOM节点的节点名字或者判断其名字跟传入参数是否匹配
+			return elem.nodeName && elem.nodeName.toLowerCase() === name.toLowerCase();// IE下，DOM节点的nodeName是大写的，例如DIV，所以统一转成小写再判断，这里不直接return elem.nodeName.toLowerCase()，原因可能是为了保持浏览器自身的对外的规则，避免所有引用nodeName都要做转换的动作
 		},
-		// args is for internal usage only
-		each: function (obj, callback, args) {
+		each: function (obj, callback, args) {//仅供内部使用的数组。遍历一个数组或者对象，obj是需要遍历的数组或者对象，callback 是处理数组/对象的每个元素的回调函数，它的返回值实际会中断循环的过程， args是额外的参数数组
 			var value,
 				i = 0,
 				length = obj.length,
-				isArray = isArraylike(obj);
+				isArray = isArraylike(obj);//判断是不是数组
 			if (args) {
 				if (isArray) {
 					for (; i < length; i++) {
@@ -234,8 +233,7 @@
 						}
 					}
 				}
-				// A special, fast, case for the most common use of each
-			} else {
+			} else {//一个特殊、快速、最常用的例子
 				if (isArray) {
 					for (; i < length; i++) {
 						value = callback.call(obj[i], i, obj[i]);
@@ -254,58 +252,50 @@
 			}
 			return obj;
 		},
-
-		// Support: Android<4.1, IE<9
-		trim: function (text) {
+		trim: function (text) {//支持安卓4.1以下，IE9以下。去除字符串两端空格
 			return text == null ?
 				"" :
 				(text + "").replace(rtrim, "");
 		},
-
-		// results is for internal usage only
-		makeArray: function (arr, results) {
+		makeArray: function (arr, results) {//结果仅供内部使用。此方法为内部方法。将类数组对象转换为数组对象
 			var ret = results || [];
 			if (arr != null) {
-				if (isArraylike(Object(arr))) {
+				if (isArraylike(Object(arr))) {//如果arr是一个类数组对象，调用merge合到返回值
 					jQuery.merge(ret,
 						typeof arr === "string" ?
 							[arr] : arr
 					);
 				} else {
-					push.call(ret, arr);
+					push.call(ret, arr);//如果不是数组，则将其放到返回数组末尾,这里等同于ret.push(arr);
 				}
 			}
 			return ret;
 		},
 
-		inArray: function (elem, arr, i) {
+		inArray: function (elem, arr, i) {//在数组中查找指定值并返回它的索引（如果没有找到，则返回-1），elem规定需检索的值，arr表示数组，i为可选的整数参数，规定在数组中开始检索的位置，它的合法取值是 0 到 arr.length - 1，如省略该参数，则将从数组首元素开始检索。
 			var len;
 			if (arr) {
-				if (indexOf) {
+				if (indexOf) {//如果支持原生的indexOf方法，直接调用
 					return indexOf.call(arr, elem, i);
 				}
 				len = arr.length;
 				i = i ? i < 0 ? Math.max(0, len + i) : i : 0;
 				for (; i < len; i++) {
-					// Skip accessing in sparse arrays
-					if (i in arr && arr[i] === elem) {
+					if (i in arr && arr[i] === elem) {//jQuery这里的(i in arr)判断是为了跳过稀疏数组中的元素
 						return i;
 					}
 				}
 			}
 			return -1;
 		},
-
-		merge: function (first, second) {
+		merge: function (first, second) {//merge的两个参数必须为数组，作用就是修改第一个数组，使得它末尾加上第二个数组
 			var len = +second.length,
 				j = 0,
 				i = first.length;
 			while (j < len) {
 				first[i++] = second[j++];
 			}
-			// Support: IE<9
-			// Workaround casting of .length to NaN on otherwise arraylike objects (e.g., NodeLists)
-			if (len !== len) {
+			if (len !== len) { //兼容IE<9, 在其他类数组对象(例如NodeLists)中取 .length 取到的是NaN
 				while (second[j] !== undefined) {
 					first[i++] = second[j++];
 				}
@@ -313,15 +303,13 @@
 			first.length = i;
 			return first;
 		},
-		grep: function (elems, callback, invert) {
+		grep: function (elems, callback, invert) {//查找满足过滤函数的数组元素,原始数组不受影响， elems是传入的数组，callback是过滤器，inv为true则返回那些被过滤掉的值
 			var callbackInverse,
 				matches = [],
 				i = 0,
 				length = elems.length,
 				callbackExpect = !invert;
-			// Go through the array, only saving the items
-			// that pass the validator function
-			for (; i < length; i++) {
+			for (; i < length; i++) { //通过数组，只保存通过验证函数的项
 				callbackInverse = !callback(elems[i], i);
 				if (callbackInverse !== callbackExpect) {
 					matches.push(elems[i]);
@@ -329,24 +317,20 @@
 			}
 			return matches;
 		},
-		// arg is for internal usage only
-		map: function (elems, callback, arg) {
+		map: function (elems, callback, arg) {//数组仅供内部使用。把数组每一项经过callback处理后的值依次加入到返回数组中
 			var value,
 				i = 0,
 				length = elems.length,
 				isArray = isArraylike(elems),
 				ret = [];
-			// Go through the array, translating each of the items to their new values
-			if (isArray) {
+			if (isArray) {//遍历数组，将每个项转换为新值
 				for (; i < length; i++) {
 					value = callback(elems[i], i, arg);
-
 					if (value != null) {
 						ret.push(value);
 					}
 				}
-				// Go through every key on the object,
-			} else {
+			} else {//遍历对象中的每一个键
 				for (i in elems) {
 					value = callback(elems[i], i, arg);
 					if (value != null) {
@@ -354,61 +338,35 @@
 					}
 				}
 			}
-			// Flatten any nested arrays
-			return concat.apply([], ret);
+			return concat.apply([], ret);//将结果集扁平化
 		},
-
-		// A global GUID counter for objects
-		guid: 1,
-
-		// Bind a function to a context, optionally partially applying any
-		// arguments.
-		proxy: function (fn, context) {
+		guid: 1,//对象的全局GUID计数器
+		proxy: function (fn, context) {//将函数绑定到上下文，随意的部分应用任何参数。接受一个函数，然后返回一个新函数，并且这个新函数始终保持了特定的上下文语境, fn--将要改变上下文语境的函数, context--函数的上下文语境(this)会被设置成这个object对象
 			var args, proxy, tmp;
-
 			if (typeof context === "string") {
 				tmp = fn[context];
 				context = fn;
 				fn = tmp;
 			}
-
-			// Quick check to determine if target is callable, in the spec
-			// this throws a TypeError, but we will just return undefined.
-			if (!jQuery.isFunction(fn)) {
+			if (!jQuery.isFunction(fn)) {//快速检查以确定目标是否可调用，在规范中，这会抛出一个TypeError，但是我们将返回undefined。
 				return undefined;
 			}
-
-			// Simulated bind
-			args = slice.call(arguments, 2);
+			args = slice.call(arguments, 2);//模拟绑定，将参数转化为数组
 			proxy = function () {
 				return fn.apply(context || this, args.concat(slice.call(arguments)));
 			};
-
-			// Set the guid of unique handler to the same of original handler, so it can be removed
-			proxy.guid = fn.guid = fn.guid || jQuery.guid++;
-
+			proxy.guid = fn.guid = fn.guid || jQuery.guid++;//将唯一处理程序的GUID设置为原始处理程序的相同，以便可以移除
 			return proxy;
 		},
-
 		now: function () {
-			return +(new Date());
+			return +(new Date()); //返回当前时间
 		},
-
-		// jQuery.support is not used in Core but other projects attach their
-		// properties to it so it needs to exist.
-		support: support
+		support: support //jQuery.support在Core中不使用，但其他项目将它们的属性附加到它，因此它需要存在。
 	});
-
-	// Populate the class2type map
-	jQuery.each("Boolean Number String Function Array Date RegExp Object Error".split(" "), function (i, name) {
+	jQuery.each("Boolean Number String Function Array Date RegExp Object Error".split(" "), function (i, name) {//填充class2type的映射。typeof并不能区分出它是Array、RegExp等object类型，jQuery为了扩展typeof的表达力，因此有了$.type方法。针对一些特殊的对象（例如 null，Array，RegExp）也进行精准的类型判断。运用了钩子机制，判断类型前，将常见类型打表，先存于一个Hash表class2type里边。
 		class2type["[object " + name + "]"] = name.toLowerCase();
 	});
-
-	function isArraylike(obj) {
-		// Support: iOS 8.2 (not reproducible in simulator)
-		// `in` check used to prevent JIT error (gh-2145)
-		// hasOwn isn't used here due to false negatives
-		// regarding Nodelist length in IE
+	function isArraylike(obj) {//返回对象是否是类数组对象。支持iOS8.2（模拟器不可复现），内部检查防止JIT（即时编译器）错误，因为会漏报所以hasOwn不在这里使用，关于IE中的Nodelist长度
 		var length = "length" in obj && obj.length,
 			type = jQuery.type(obj);
 		if (type === "function" || jQuery.isWindow(obj)) {
