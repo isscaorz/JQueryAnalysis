@@ -429,243 +429,163 @@
 				return -1;
 			},		
 			booleans = "checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped",//用来在做属性选择的时候进行判断		
-			// Regular expressions 正则表达式		 
+			// Regular expressions 正则表达式 (之后再重新仔细理解)		 
 			whitespace = "[\\x20\\t\\r\\n\\f]", //正则---空白字符 http://www.w3.org/TR/css3-selectors/#whitespace 。 \t 制表符；\r 回车；\n 换行；\f 换页；\xnn由十六进制数nn指定的拉丁字符-->\uxxxx由十六进制数xxxx指定的Unicode字符,\x20化为二进制数为0010 0000 ,对照表格http://ascii.911cha.com/，表示空格；
 			characterEncoding = "(?:\\\\.|[\\w-]|[^\\x00-\\xa0])+", //正则---字符编码 http://www.w3.org/TR/css3-syntax/#characters。 一段正则规则（这里并非完整的正则表达式，只是一段）匹配符合 css 命名的字符串，\\\\. 转换到正则表达式中就是 \\.+ 用来兼容带斜杠的 css，三种匹配字符的方式：\\.+ ，[\w-]+ , 大于\xa0的字符+
 			identifier = characterEncoding.replace( "w", "w#" ), //正则，相当于identifier = "(?:\\.|[\w#-]|[^\x00-\xa0])+"，不精确地模拟CSS标识符字符，未引用的值应该是CSS标识符http://www.w3.org/TR/css3-selectors/#attribute-selectors，正确的语法http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
-		
-			// Attribute selectors: http://www.w3.org/TR/selectors/#attribute-selectors 属性选择器
-			attributes = "\\[" + whitespace + "*(" + characterEncoding + ")(?:" + whitespace +
-				// Operator (capture 2) 操作符
-				"*([*^$|!~]?=)" + whitespace +
-				// "Attribute values must be CSS identifiers [capture 5] or strings [capture 3 or capture 4]"  属性值必须是CSS标识符或字符串
-				"*(?:'((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\"|(" + identifier + "))|)" + whitespace +
-				"*\\]",
-		
-			pseudos = ":(" + characterEncoding + ")(?:\\((" +
-				// To reduce the number of selectors needing tokenize in the preFilter, prefer arguments: 为了减少预过滤器中需要标记的选择器的数量，请选择参数：
-				// 1. quoted (capture 3; capture 4 or capture 5) 引用
-				"('((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\")|" +
-				// 2. simple (capture 6) 简单（捕获6）
-				"((?:\\\\.|[^\\\\()[\\]]|" + attributes + ")*)|" +
-				// 3. anything else (capture 2) 其他
-				".*" +
-				")\\)|)",
-		
-			// Leading and non-escaped trailing whitespace, capturing some non-whitespace characters preceding the latter 引导和非逃逸尾随空白，在后者之前捕获一些非空白字符
-			rwhitespace = new RegExp( whitespace + "+", "g" ),
-			rtrim = new RegExp( "^" + whitespace + "+|((?:^|[^\\\\])(?:\\\\.)*)" + whitespace + "+$", "g" ),
-		
-			rcomma = new RegExp( "^" + whitespace + "*," + whitespace + "*" ),
-			rcombinators = new RegExp( "^" + whitespace + "*([>+~]|" + whitespace + ")" + whitespace + "*" ),
-		
-			rattributeQuotes = new RegExp( "=" + whitespace + "*([^\\]'\"]*?)" + whitespace + "*\\]", "g" ),
-		
-			rpseudo = new RegExp( pseudos ),
-			ridentifier = new RegExp( "^" + identifier + "$" ),
-		
-			matchExpr = {
+			attributes = "\\[" + whitespace + "*(" + characterEncoding + ")(?:" + whitespace + "*([*^$|!~]?=)" + whitespace + "*(?:'((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\"|(" + identifier + "))|)" + whitespace + "*\\]", //属性选择器http://www.w3.org/TR/selectors/#attribute-selectors  属性值必须是CSS标识符或字符串
+			//attributes = "\\[[\\x20\\t\\r\\n\\f]*((?:\\\\.|[\\w-]|[^\\x00-\\xa0])+)(?:[\\x20\\t\\r\\n\\f]*([*^$|!~]?=)[\\x20\\t\\r\\n\\f]*(?:'((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\"|((?:\\.|[\w#-]|[^\x00-\xa0])+))|)[\\x20\\t\\r\\n\\f]*\\]"
+			//attributes = "\[[\x20\t\r\n\f]*((?:\\.|[\w-]|[^\x00-\xa0])+)(?:[\x20\t\r\n\f]*([*^$|!~]?=)[\x20\t\r\n\f]*(?:'((?:\\.|[^\\'])*)'|\"((?:\\.|[^\\\"])*)\"|((?:\.|[\w#-]|[^\x00-\xa0])+))|)[\x20\t\r\n\f]*\]"
+			//attributes = "\[[\x20\t\r\n\f]*((?:\\.|[\w-]|[^\x00-\xa0])+)[\x20\t\r\n\f]*(?:([*^$|!~]?=)[\x20\t\r\n\f]*(?:(['"])((?:\\.|[^\\])*?)\3|((?:\\.|[\w#-]|[^\x00-\xa0])+)|)|)[\x20\t\r\n\f]*\]"
+			//得到的捕获组序列: 
+			//$1:attrName, 捕获的是attrName ; 
+			//$2:([*^$|!~]?=),  捕获的是 = 或 != 这样的等号方式 ; 
+			//$3:(['\"]), 捕获单双引号 ; 
+			//$4:((?:\\\\.|[^\\\\])*?)\\3|(" + identifier + ")|)|),  提供三种匹配字符串的方式：\\.*?\3,非斜$杠*?\3(因为斜杠没意义),识别符,此处相当于捕获 attrValue，只不过要兼容带引号和不带两种形式 ; 
+			//$5:(" + identifier + ")捕获识别符
+			//看attributes开头和结尾匹配的是代表属性选择符的'['和']'，所以整个正则捕获出来的结果分别代表的含义是[attrName、等号、引号、attrValue、attrValue], 大致就是可以匹配 "[name = abc]" | "[name = 'abc']" 这种属性表达式
+			pseudos = ":(" + characterEncoding + ")(?:\\((" + "('((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\")|" +	"((?:\\\\.|[^\\\\()[\\]]|" + attributes + ")*)|" + ".*" + ")\\)|)", // 为了减少预过滤器中需要标记的选择器的数量
+			//pseudos = ":((?:\\\\.|[\\w-]|[^\\x00-\\xa0])+)(?:\\((('((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\")|((?:\\\\.|[^\\\\()[\\]]|(?:\\.|[\w#-]|[^\x00-\xa0])+)*)|.*)\\)|)", 
+			//pseudos = ":((?:\\.|[\w-]|[^\x00-\xa0])+)(?:\((('((?:\\.|[^\\'])*)'|\"((?:\\.|[^\\\"])*)\")|((?:\\.|[^\\()[\]]|(?:\.|[\w#-]|[^\x00-\xa0])+)*)|.*)\)|)", 
+			//pseudos = ":(" + characterEncoding + ")(?:\\(((['\"])((?:\\\\.|[^\\\\])*?)\\3|((?:\\\\.|[^\\\\()[\\]]|" + attributes.replace(3, 8) + ")*)|.*)\\)|)",
+			// 伪类 得到的捕获组序列:
+			// $1: pseudoName, 捕获伪元素或伪类的名字
+			// $2: ((['\"])((?:\\\\.|[^\\\\])*?)\\3|((?:\\\\.|[^\\\\()[\\]]|" + attributes.replace( 3, 8 ) + ")*)|.*) , 捕获两种类型的字符，一种是带引号的字符串，一种是attributes那样的键值对
+			// $3: (['\"]) , 捕获引号
+			// $4: ((?:\\\\.|[^\\\\])*?),$5:((?:\\\\.|[^\\\\()[\\]]|" + attributes.replace( 3, 8 ) + ")*) , $4 和 $5 分别捕获 $2 中的一部分
+			rwhitespace = new RegExp( whitespace + "+", "g" ),//正则---引导和非逃逸尾随空白，在后者之前捕获一些非空白字符
+			rtrim = new RegExp( "^" + whitespace + "+|((?:^|[^\\\\])(?:\\\\.)*)" + whitespace + "+$", "g" ),//正则---匹配前后空格		
+			rcomma = new RegExp( "^" + whitespace + "*," + whitespace + "*" ),//正则---匹配逗号, 这个后面用来清除css规则中组与组之间的逗号
+			rcombinators = new RegExp( "^" + whitespace + "*([>+~]|" + whitespace + ")" + whitespace + "*" ),//正则---选择器当中的关系连接符 [>+~ whitespace ] , $1: ([>+~]|whitespace)分别捕获4种连接符:'>','+','~','whitespace' , 第二个whitespace的作用是匹配空格，表示关系连接符当中的后代关系（例如"div p"这里面的空格）
+			rattributeQuotes = new RegExp( "=" + whitespace + "*([^\\]'\"]*?)" + whitespace + "*\\]", "g" ),//正则---匹配属性等号[type=xxx] =之后的=xxx],rattributeQuotes = new RegExp("=[\\x20\\t\\r\\n\\f]*([^\\]'\"]*)[\\x20\\t\\r\\n\\f]*\\]","g")
+			rpseudo = new RegExp( pseudos ),//正则---构造匹配伪类正则表达式
+			ridentifier = new RegExp( "^" + identifier + "$" ),//正则---构造匹配符合css命名规范的字符串正则表达式		
+			matchExpr = {// 存储了匹配各类选择器的数组，这里是最后用来检测的正则表达式，使用形式通常是matchExpr[tokens[i].type].test(...)
 				"ID": new RegExp( "^#(" + characterEncoding + ")" ),
 				"CLASS": new RegExp( "^\\.(" + characterEncoding + ")" ),
 				"TAG": new RegExp( "^(" + characterEncoding.replace( "w", "w*" ) + ")" ),
 				"ATTR": new RegExp( "^" + attributes ),
 				"PSEUDO": new RegExp( "^" + pseudos ),
-				"CHILD": new RegExp( "^:(only|first|last|nth|nth-last)-(child|of-type)(?:\\(" + whitespace +
-					"*(even|odd|(([+-]|)(\\d*)n|)" + whitespace + "*(?:([+-]|)" + whitespace +
-					"*(\\d+)|))" + whitespace + "*\\)|)", "i" ),
+				"CHILD": new RegExp( "^:(only|first|last|nth|nth-last)-(child|of-type)(?:\\(" + whitespace + "*(even|odd|(([+-]|)(\\d*)n|)" + whitespace + "*(?:([+-]|)" + whitespace + "*(\\d+)|))" + whitespace + "*\\)|)", "i" ),
 				"bool": new RegExp( "^(?:" + booleans + ")$", "i" ),
-				// For use in libraries implementing .is()
-				// We use this for POS matching in `select`
-				"needsContext": new RegExp( "^" + whitespace + "*[>+~]|:(even|odd|eq|gt|lt|nth|first|last)(?:\\(" +
-					whitespace + "*((?:-\\d)?\\d*)" + whitespace + "*\\)|)(?=[^-]|$)", "i" )
-			},
-		
-			rinputs = /^(?:input|select|textarea|button)$/i,
-			rheader = /^h\d$/i,
-		
-			rnative = /^[^{]+\{\s*\[native \w/,
-		
-			// Easily-parseable/retrievable ID or TAG or CLASS selectors
-			rquickExpr = /^(?:#([\w-]+)|(\w+)|\.([\w-]+))$/,
-		
-			rsibling = /[+~]/,
-			rescape = /'|\\/g,
-		
-			// CSS escapes http://www.w3.org/TR/CSS21/syndata.html#escaped-characters
-			runescape = new RegExp( "\\\\([\\da-f]{1,6}" + whitespace + "?|(" + whitespace + ")|.)", "ig" ),
-			funescape = function( _, escaped, escapedWhitespace ) {
-				var high = "0x" + escaped - 0x10000;
-				// NaN means non-codepoint
-				// Support: Firefox<24
-				// Workaround erroneous numeric interpretation of +"0x"
-				return high !== high || escapedWhitespace ?
-					escaped :
-					high < 0 ?
-						// BMP codepoint
-						String.fromCharCode( high + 0x10000 ) :
-						// Supplemental Plane codepoint (surrogate pair)
-						String.fromCharCode( high >> 10 | 0xD800, high & 0x3FF | 0xDC00 );
-			},
-		
-			// Used for iframes
-			// See setDocument()
-			// Removing the function wrapper causes a "Permission Denied"
-			// error in IE
-			unloadHandler = function() {
+				"needsContext": new RegExp( "^" + whitespace + "*[>+~]|:(even|odd|eq|gt|lt|nth|first|last)(?:\\(" +	whitespace + "*((?:-\\d)?\\d*)" + whitespace + "*\\)|)(?=[^-]|$)", "i" )//在.is()定义的时候使用这个作为选择匹配
+			},		
+			rinputs = /^(?:input|select|textarea|button)$/i,//匹配input类型
+			rheader = /^h\d$/i,	//匹配h1~h6标签	
+			rnative = /^[^{]+\{\s*\[native \w/,//检测浏览器是否支持诸如 document.getElementById 、document.getElementByClassName 等方法
+			rquickExpr = /^(?:#([\w-]+)|(\w+)|\.([\w-]+))$/, //易于可解析/可检索的id或tag或class选择器		
+			rsibling = /[+~]/,//正则---兄弟关系[+~]
+			rescape = /'|\\/g,//匹配'和\			
+			runescape = new RegExp( "\\\\([\\da-f]{1,6}" + whitespace + "?|(" + whitespace + ")|.)", "ig" ),//正则匹配字符编码，类似 \0a0000 这样的编码， CSS逃逸 http://www.w3.org/TR/CSS21/syndata.html#escaped-characters
+			funescape = function( _, escaped, escapedWhitespace ) {// jQuery还考虑了编码 http://zh.wikipedia.org/wiki/UTF-16 ,转换为UTF-16编码，若某个字符是多种字符，超过 BMP 的计数范围 0xFFFF ,则必须将其编码成小于 0x10000 的形式。
+				var high = "0x" + escaped - 0x10000; // 这里的 high !== 用于判断 high是否是 NaN , NaN !== NaN ， 当 high 为 NaN , escapedWhitespace 为 undefined 时，再判断 high 是否为负数
+				return high !== high || escapedWhitespace ?	escaped : high < 0 ? String.fromCharCode( high + 0x10000 ) : String.fromCharCode( high >> 10 | 0xD800, high & 0x3FF | 0xDC00 );//NaN表示非代码点，支持：Firefox < 24，“0x”的加工误差数字解释，BMP码点 补充平面码点（代理对）
+			},					
+			unloadHandler = function() {//用于iframes, 查看setDocument(), 在IE中移除函数包装器导致“权限被拒绝”错误
 				setDocument();
-			};
-		
-		// Optimize for push.apply( _, NodeList )
-		try {
+			};		
+		try { //对push.apply( _, NodeList )进行优化，支持Android<4.0，静默检查push.apply失败
 			push.apply(
 				(arr = slice.call( preferredDoc.childNodes )),
 				preferredDoc.childNodes
 			);
-			// Support: Android<4.0
-			// Detect silently failing push.apply
 			arr[ preferredDoc.childNodes.length ].nodeType;
 		} catch ( e ) {
 			push = { apply: arr.length ?
-		
-				// Leverage slice if possible
-				function( target, els ) {
+				function( target, els ) { //如果可能影响slice
 					push_native.apply( target, slice.call(els) );
 				} :
-		
-				// Support: IE<9
-				// Otherwise append directly
-				function( target, els ) {
+				function( target, els ) { //否则直接追加，支持IE<9
 					var j = target.length,
 						i = 0;
-					// Can't trust NodeList.length
-					while ( (target[j++] = els[i++]) ) {}
+					while ( (target[j++] = els[i++]) ) {}//不能信任NodeList.length
 					target.length = j - 1;
 				}
 			};
-		}
-		
-		function Sizzle( selector, context, results, seed ) {
-			var match, elem, m, nodeType,
-				// QSA vars
-				i, groups, old, nid, newContext, newSelector;
-		
-			if ( ( context ? context.ownerDocument || context : preferredDoc ) !== document ) {
+		}		
+		function Sizzle( selector, context, results, seed ) {//Sizzle引擎的入口函数,选择器入口，jQuery的构造函数要处理6大类情况,但是只有在处理选择器表达式(selector expression)时才会调用Sizzle选择器引擎。@param selector已去掉头尾空白的选择器字符串; @param context执行匹配的最初的上下文（即DOM元素集合）若context没有赋值，则取document; @param results已匹配出的部分最终结果。若results没有赋值，则赋予空数组; @param seed初始集合
+			var match, elem, m, nodeType, i, groups, old, nid, newContext, newSelector; // QSA vars , QSA表示querySelectorAll ，高级浏览器支持querySelectorAll这个接口，Sizzle的作用就是兼容不支持的低级浏览器
+			if ( ( context ? context.ownerDocument || context : preferredDoc ) !== document ) {//根据不同的浏览器环境,设置合适的Expr方法,构造合适的rbuggy测试
 				setDocument( context );
 			}
-		
-			context = context || document;
-			results = results || [];
-			nodeType = context.nodeType;
-		
-			if ( typeof selector !== "string" || !selector ||
-				nodeType !== 1 && nodeType !== 9 && nodeType !== 11 ) {
-		
+			context = context || document;//执行匹配的最初的上下文（即DOM元素集合）。若context没有赋值，则取document
+			results = results || [];//已匹配出的部分最终结果。若results没有赋值，则赋予空数组
+			nodeType = context.nodeType; //nodeType属性返回被选节点的节点类型,1--Element，9--Document，如果上下文传入错误，返回空数组，nodeType各个数字所代表的含义 http://www.w3school.com.cn/xmldom/prop_element_nodetype.asp
+			if ( typeof selector !== "string" || !selector || nodeType !== 1 && nodeType !== 9 && nodeType !== 11 ) {//如果选择器字符串为空，返回results,results可能是已匹配出的部分最终结果，也可能是空数组
 				return results;
 			}
-		
-			if ( !seed && documentIsHTML ) {
-		
-				// Try to shortcut find operations when possible (e.g., not under DocumentFragment)
-				if ( nodeType !== 11 && (match = rquickExpr.exec( selector )) ) {
-					// Speed-up: Sizzle("#ID")
-					if ( (m = match[1]) ) {
-						if ( nodeType === 9 ) {
+			if ( !seed && documentIsHTML ) {// 不存在seed集合,seed-种子合集（搜索器搜到符合条件的标签）
+				if ( nodeType !== 11 && (match = rquickExpr.exec( selector )) ) {//在可能的时候尝试快捷方式查找操作（例如，不在文档片段下）,快速匹配，如果是id 、tag 或者class选择器,rquickExpr = /^(?:#([\w-]+)|(\w+)|\.([\w-]+))$/
+					if ( (m = match[1]) ) { //如果匹配到id选择器#xx， selector会匹配 #[id] | [tag] | .[class] 其中之一, match[1]的值是元素是与rquickExpr的第1个子表达式相匹配的文本，在这里match[1]就是匹配到的id选择器的名字（如果有）      
+						if ( nodeType === 9 ) {// 9--Document,如果上下文是 document
 							elem = context.getElementById( m );
-							// Check parentNode to catch when Blackberry 4.6 returns
-							// nodes that are no longer in the document (jQuery #6963)
-							if ( elem && elem.parentNode ) {
-								// Handle the case where IE, Opera, and Webkit return items
-								// by name instead of ID
-								if ( elem.id === m ) {
+							if ( elem && elem.parentNode ) {//检查parentNode以捕捉在黑莓4.6下的返回，节点不再在文档中
+								if ( elem.id === m ) {//用名字代替ID以处理IE、Opera和Webkit返回项目的情况	
 									results.push( elem );
 									return results;
 								}
 							} else {
 								return results;
 							}
-						} else {
-							// Context is not a document
+						} else {//上下文不是document
 							if ( context.ownerDocument && (elem = context.ownerDocument.getElementById( m )) &&
 								contains( context, elem ) && elem.id === m ) {
 								results.push( elem );
 								return results;
 							}
 						}
-		
-					// Speed-up: Sizzle("TAG")
-					} else if ( match[2] ) {
-						push.apply( results, context.getElementsByTagName( selector ) );
-						return results;
-		
-					// Speed-up: Sizzle(".CLASS")
-					} else if ( (m = match[3]) && support.getElementsByClassName ) {
+					} else if ( match[2] ) {//如果匹配到tag选择器 诸如div p等，在这里match[2]就是匹配到的tag选择器的名字（如果有） 
+						push.apply( results, context.getElementsByTagName( selector ) );//利用原生方法 getElementsByTagName 找到元素
+						return results;		
+					} else if ( (m = match[3]) && support.getElementsByClassName ) {//如果匹配到class选择器.xxx, 并且support.getElementsByClassName为true表示浏览器支持getElementsByClassName,这个方法在这里match[3]就是匹配到的class选择器的名字（如果有）
 						push.apply( results, context.getElementsByClassName( m ) );
 						return results;
 					}
 				}
 		
-				// QSA path
-				if ( support.qsa && (!rbuggyQSA || !rbuggyQSA.test( selector )) ) {
+				
+				if ( support.qsa && (!rbuggyQSA || !rbuggyQSA.test( selector )) ) {// QSA path, QSA表示querySelectorAll，原生的QSA运行速度非常快,因此尽可能使用QSA来对CSS选择器进行查询，querySelectorAll是原生的选择器，但不支持老的浏览器版本, 主要是IE8及以前的浏览器 , rbuggyQSA保存了用于解决一些浏览器兼容问题的bug修补的正则表达式，QSA在不同浏览器上运行的效果有差异，表现得非常奇怪，因此对某些selector不能用 QSA。 为了适应不同的浏览器，就需要首先进行浏览器兼容性测试，然后确定测试正则表达式,用rbuggyQSA来确定selector是否能用QSA
 					nid = old = expando;
 					newContext = context;
 					newSelector = nodeType !== 1 && selector;
-		
-					// qSA works strangely on Element-rooted queries
-					// We can work around this by specifying an extra ID on the root
-					// and working up from there (Thanks to Andrew Dupont for the technique)
-					// IE 8 doesn't work on object elements
-					if ( nodeType === 1 && context.nodeName.toLowerCase() !== "object" ) {
-						groups = tokenize( selector );
-		
-						if ( (old = context.getAttribute("id")) ) {
+					if ( nodeType === 1 && context.nodeName.toLowerCase() !== "object" ) {//QSA在以某个根节点ID为基础的查找中(.rootClass span)表现很奇怪，它会忽略某些selector选项，返回不合适的结果，一个比较通常的解决方法是为根节点设置一个额外的id，并以此开始查询。IE 8在对象元素上不起作用。
+						groups = tokenize( selector );//调用词法分析器分析选择器，得到一个 Token 序列
+						if ( (old = context.getAttribute("id")) ) {//保存并设置新id
 							nid = old.replace( rescape, "\\$&" );
 						} else {
 							context.setAttribute( "id", nid );
 						}
-						nid = "[id='" + nid + "'] ";
-		
-						i = groups.length;
+						nid = "[id='" + nid + "'] ";		
+						i = groups.length;//把新的id添加到Token序列里
 						while ( i-- ) {
 							groups[i] = nid + toSelector( groups[i] );
 						}
-						newContext = rsibling.test( selector ) && testContext( context.parentNode ) || context;
-						newSelector = groups.join(",");
+						newContext = rsibling.test( selector ) && testContext( context.parentNode ) || context;//构造新的上下文
+						newSelector = groups.join(",");//构造新的选择器
 					}
-		
-					if ( newSelector ) {
+					if ( newSelector ) {//使用新的选择器通过QSA来查询元素
 						try {
-							push.apply( results,
+							push.apply( results,//将查询结果合并到results上
 								newContext.querySelectorAll( newSelector )
 							);
 							return results;
 						} catch(qsaError) {
 						} finally {
-							if ( !old ) {
+							if ( !old ) {//如果没有旧id,则移除
 								context.removeAttribute("id");
 							}
 						}
 					}
 				}
 			}
-		
-			// All others
-			return select( selector.replace( rtrim, "$1" ), context, results, seed );
+			return select( selector.replace( rtrim, "$1" ), context, results, seed );//到这里仍没有返回结果，表明这些selector无法直接使用原生的document查询方法（当前浏览器不支持 QSA）,调用 select 方法
 		}
-		
-		/**
-		 * Create key-value caches of limited size
-		 * @returns {Function(string, Object)} Returns the Object data after storing it on itself with
-		 *	property name the (space-suffixed) string and (if the cache is larger than Expr.cacheLength)
-		*	deleting the oldest entry
-		*/
-		function createCache() {
-			var keys = [];
-		
+		function createCache() {//创建一个有限大小的key-value格式的缓存,返回值{Function(string, Object)}用属性名（空间后缀）字符串存储它自己并返回对象数据，同时（如果缓存大于ExpR.Cache长度）删除最旧的条目
+			var keys = [];//用来保存已经存储过的key-value，这是一种闭包
 			function cache( key, value ) {
 				// Use (key + " ") to avoid collision with native prototype properties (see Issue #157)
-				if ( keys.push( key + " " ) > Expr.cacheLength ) {
-					// Only keep the most recent entries
-					delete cache[ keys.shift() ];
+				if ( keys.push( key + " " ) > Expr.cacheLength ) {//key后面加空格是为了避免覆盖原生属性,当缓存栈超过长度限制时，则需要删除以前的缓存（后进先出，从栈底删除）
+					delete cache[ keys.shift() ];//只保留最新条目
 				}
 				return (cache[ key + " " ] = value);
 			}
