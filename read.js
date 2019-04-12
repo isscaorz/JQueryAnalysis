@@ -271,7 +271,6 @@
 			}
 			return ret;
 		},
-
 		inArray: function (elem, arr, i) {//在数组中查找指定值并返回它的索引（如果没有找到，则返回-1），elem规定需检索的值，arr表示数组，i为可选的整数参数，规定在数组中开始检索的位置，它的合法取值是 0 到 arr.length - 1，如省略该参数，则将从数组首元素开始检索。
 			var len;
 			if (arr) {
